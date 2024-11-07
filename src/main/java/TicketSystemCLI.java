@@ -1,4 +1,11 @@
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Scanner;
+
 
 public class TicketSystemCLI {
 
@@ -7,22 +14,25 @@ public class TicketSystemCLI {
     private int customerRetrievalRate;
     private int maxTicketCapacity;
 
+    private static final String JSON_FILE_PATH = "configuration.json";
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
     public void configureSystem() {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Welcome to the Ticket System Configuration");
 
         // Set total tickets
-        totalTickets = getValidatedInput(scanner, "Total Number of Tickets (totalTickets)");
+        totalTickets = getValidatedInput(scanner, "Total Number of Tickets");
 
         // Set ticket release rate
-        ticketReleaseRate = getValidatedInput(scanner, "Ticket Release Rate (ticketReleaseRate)");
+        ticketReleaseRate = getValidatedInput(scanner, "Ticket Release Rate");
 
         // Set customer retrieval rate
-        customerRetrievalRate = getValidatedInput(scanner, "Customer Retrieval Rate (customerRetrievalRate)");
+        customerRetrievalRate = getValidatedInput(scanner, "Customer Retrieval Rate ");
 
         // Set max ticket capacity
-        maxTicketCapacity = getValidatedInput(scanner, "Maximum Ticket Capacity (maxTicketCapacity)");
+        maxTicketCapacity = getValidatedInput(scanner, "Maximum Ticket Capacity");
 
         // Check if max capacity is logical
         while (totalTickets > maxTicketCapacity) {
@@ -67,8 +77,36 @@ public class TicketSystemCLI {
         }
     }
 
+    public static void saveConfigurationAsJson(Configuration config) {
+        try (FileWriter writer = new FileWriter(JSON_FILE_PATH)) {
+            gson.toJson(config, writer);
+            System.out.println("Configuration saved as JSON.");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static Configuration loadConfigurationFromJson() {
+        try (FileReader reader = new FileReader(JSON_FILE_PATH)) {
+            return gson.fromJson(reader, Configuration.class);
+        } catch (IOException e) {
+            System.out.println("No previous configuration found, starting fresh.");
+            return null;
+        }
+    }
+
+
     public static void main(String[] args) {
         TicketSystemCLI config = new TicketSystemCLI();
         config.configureSystem();
+
+        Configuration loadedConfig = loadConfigurationFromJson();
+        if (loadedConfig != null) {
+            System.out.println("Loaded Configuration:");
+            System.out.println("Total Tickets: " + loadedConfig.getTotalTickets());
+            System.out.println("Ticket Release Rate: " + loadedConfig.getTicketReleaseRate());
+            System.out.println("Customer Retrieval Rate: " + loadedConfig.getCustomerRetrievalRate());
+            System.out.println("Maximum Ticket Capacity: " + loadedConfig.getMaxTicketCapacity());
+        }
     }
 }
