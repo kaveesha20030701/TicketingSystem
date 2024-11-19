@@ -51,11 +51,13 @@ public class TicketSystemCLI {
         System.out.print("Confirm settings? (yes/no): ");
         String confirmation = scanner.nextLine();
         if (confirmation.equalsIgnoreCase("yes")) {
+            Configuration config = new Configuration(totalTickets, ticketReleaseRate, customerRetrievalRate, maxTicketCapacity);
+            saveConfigurationAsJson(config);
             System.out.println("Configuration saved. System starting...");
-            // Proceed to start the system with these settings
         } else {
             System.out.println("Configuration canceled. Please restart the configuration process.");
         }
+
 
         scanner.close();
     }
@@ -108,5 +110,33 @@ public class TicketSystemCLI {
             System.out.println("Customer Retrieval Rate: " + loadedConfig.getCustomerRetrievalRate());
             System.out.println("Maximum Ticket Capacity: " + loadedConfig.getMaxTicketCapacity());
         }
+
+        TicketPool ticketPool = new TicketPool(50);
+
+
+        Vendor vendor1 = new Vendor("Vendor A", ticketPool, 20);
+        Vendor vendor2 = new Vendor("Vendor B", ticketPool, 30);
+
+
+        Customer customer1 = new Customer("Customer A", ticketPool, 40);
+        Customer customer2 = new Customer("Customer B", ticketPool, 20);
+        Customer customer3 = new Customer("Customer C", ticketPool, 10);
+
+
+        Thread vendorThread1 = new Thread(vendor1);
+        Thread vendorThread2 = new Thread(vendor2);
+
+
+        Thread customerThread1 = new Thread(customer1);
+        Thread customerThread2 = new Thread(customer2);
+        Thread customerThread3 = new Thread(customer3);
+
+
+        vendorThread1.start();
+        vendorThread2.start();
+        customerThread1.start();
+        customerThread2.start();
+        customerThread3.start();
     }
 }
+
