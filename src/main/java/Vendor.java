@@ -1,22 +1,41 @@
 public class Vendor implements Runnable {
-    private String vendorName;
-    private TicketPool ticketPool;
-    private int ticketsToAdd;
+    private final int vendorId;
+    private final int ticketsPerRelease;
+    private final TicketPool ticketPool;
+    private final Logger logger;
 
-    // Constructor
-    public Vendor(String vendorName, TicketPool ticketPool, int ticketsToAdd) {
-        this.vendorName = vendorName;
+    public Vendor(int vendorId, int ticketsPerRelease, TicketPool ticketPool, Logger logger) {
+        this.vendorId = vendorId;
+        this.ticketsPerRelease = ticketsPerRelease;
         this.ticketPool = ticketPool;
-        this.ticketsToAdd = ticketsToAdd;
+        this.logger = logger;
     }
 
     @Override
     public void run() {
-        System.out.println(vendorName + " started releasing tickets.");
-        synchronized (ticketPool) {
-            ticketPool.addTickets(ticketsToAdd);
-            System.out.println(vendorName + " added " + ticketsToAdd + " tickets. Total tickets: " + ticketPool.getAvailableTickets());
+        try {
+            while (!Thread.currentThread().isInterrupted()) {
+                // Add tickets to the pool
+                ticketPool.addTickets(vendorId, ticketsPerRelease);
+
+                // Log the action
+                logger.log("Vendor " + vendorId + " added " + ticketsPerRelease + " tickets.");
+
+                if (Thread.currentThread().isInterrupted()) break;
+
+                // Wait before adding tickets again
+                Thread.sleep(1000);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.log("Vendor " + vendorId + " interrupted and stopped.");
+        } catch (Exception e) {
+            logger.log("Vendor " + vendorId + " encountered an error: " + e.getMessage());
         }
-        System.out.println(vendorName + " finished releasing tickets.");
     }
 }
+
+
+
+
+

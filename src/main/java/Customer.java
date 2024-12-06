@@ -1,30 +1,38 @@
 public class Customer implements Runnable {
-    private String customerName;
-    private TicketPool ticketPool;
-    private int ticketsToRetrieve;
+    private final int customerId;
+    private final int retrievalInterval;
+    private final TicketPool ticketPool;
+    private final Logger logger;
 
-    // Constructor
-    public Customer(String customerName, TicketPool ticketPool, int ticketsToRetrieve) {
-        this.customerName = customerName;
+    public Customer(int customerId, int retrievalInterval, TicketPool ticketPool, Logger logger) {
+        this.customerId = customerId;
+        this.retrievalInterval = retrievalInterval;
         this.ticketPool = ticketPool;
-        this.ticketsToRetrieve = ticketsToRetrieve;
+        this.logger = logger;
     }
 
     @Override
     public void run() {
-        System.out.println(customerName + " started retrieving tickets.");
         try {
-            synchronized (ticketPool) {
-                if (ticketPool.getAvailableTickets() >= ticketsToRetrieve) {
-                    ticketPool.reduceTickets(ticketsToRetrieve);
-                    System.out.println(customerName + " successfully retrieved " + ticketsToRetrieve + " tickets. Remaining tickets: " + ticketPool.getAvailableTickets());
+            while (!Thread.currentThread().isInterrupted()) {
+                // Attempt to retrieve a ticket
+                String ticket = ticketPool.removeTicket(customerId);
+
+                // Log the retrieval action
+                if (ticket != null) {
+                    logger.log("Customer " + customerId + " retrieved " + ticket + ".");
                 } else {
-                    System.out.println(customerName + " failed to retrieve tickets. Not enough tickets available.");
+                    logger.log("Customer " + customerId + " found no tickets available.");
                 }
+
+                // Wait before trying to retrieve another ticket
+                Thread.sleep(retrievalInterval);
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.log("Customer " + customerId + " interrupted and stopped.");
         } catch (Exception e) {
-            System.out.println(customerName + " encountered an error: " + e.getMessage());
+            logger.log("Customer " + customerId + " encountered an error: " + e.getMessage());
         }
-        System.out.println(customerName + " finished ticket retrieval.");
     }
 }

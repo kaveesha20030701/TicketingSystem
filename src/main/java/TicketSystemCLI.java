@@ -9,13 +9,11 @@ import java.util.Scanner;
 
 public class TicketSystemCLI {
 
-    private int totalTickets;
-    private int ticketReleaseRate;
-    private int customerRetrievalRate;
     private int maxTicketCapacity;
 
     private static final String JSON_FILE_PATH = "configuration.json";
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
 
     public void configureSystem() {
         Scanner scanner = new Scanner(System.in);
@@ -23,13 +21,13 @@ public class TicketSystemCLI {
         System.out.println("Welcome to the Ticket System Configuration");
 
         // Set total tickets
-        totalTickets = getValidatedInput(scanner, "Total Number of Tickets");
+        int totalTickets = getValidatedInput(scanner, "Total Number of Tickets");
 
         // Set ticket release rate
-        ticketReleaseRate = getValidatedInput(scanner, "Ticket Release Rate");
+        int ticketReleaseRate = getValidatedInput(scanner, "Ticket Release Rate");
 
         // Set customer retrieval rate
-        customerRetrievalRate = getValidatedInput(scanner, "Customer Retrieval Rate ");
+        int customerRetrievalRate = getValidatedInput(scanner, "Customer Retrieval Rate ");
 
         // Set max ticket capacity
         maxTicketCapacity = getValidatedInput(scanner, "Maximum Ticket Capacity");
@@ -48,9 +46,9 @@ public class TicketSystemCLI {
         System.out.println("Customer Retrieval Rate: " + customerRetrievalRate);
         System.out.println("Maximum Ticket Capacity: " + maxTicketCapacity);
 
-        System.out.print("Confirm settings? (yes/no): ");
+        System.out.print("Confirm settings? (start/stop): ");
         String confirmation = scanner.nextLine();
-        if (confirmation.equalsIgnoreCase("yes")) {
+        if (confirmation.equalsIgnoreCase("start")) {
             Configuration config = new Configuration(totalTickets, ticketReleaseRate, customerRetrievalRate, maxTicketCapacity);
             saveConfigurationAsJson(config);
             System.out.println("Configuration saved. System starting...");
@@ -59,7 +57,6 @@ public class TicketSystemCLI {
         }
 
 
-        scanner.close();
     }
 
     private int getValidatedInput(Scanner scanner, String prompt) {
@@ -99,44 +96,47 @@ public class TicketSystemCLI {
 
 
     public static void main(String[] args) {
-        TicketSystemCLI config = new TicketSystemCLI();
-        config.configureSystem();
+        Scanner scanner = new Scanner(System.in);
+        TicketSystemCLI configCLI = new TicketSystemCLI();
+        configCLI.configureSystem();
 
-        Configuration loadedConfig = loadConfigurationFromJson();
-        if (loadedConfig != null) {
-            System.out.println("Loaded Configuration:");
-            System.out.println("Total Tickets: " + loadedConfig.getTotalTickets());
-            System.out.println("Ticket Release Rate: " + loadedConfig.getTicketReleaseRate());
-            System.out.println("Customer Retrieval Rate: " + loadedConfig.getCustomerRetrievalRate());
-            System.out.println("Maximum Ticket Capacity: " + loadedConfig.getMaxTicketCapacity());
+        Configuration loadedConfig = TicketSystemCLI.loadConfigurationFromJson();
+        if (loadedConfig == null) {
+            System.out.println("Failed to load configuration. Exiting...");
+            return;
         }
 
-        TicketPool ticketPool = new TicketPool(50);
+        TicketPool ticketPool = new TicketPool( loadedConfig.getMaxTicketCapacity());
 
+        // Instantiate the Logger
+        Logger logger = new Logger("system_logs.txt");// Assuming you want to log to a file named "system_logs.txt"
 
-        Vendor vendor1 = new Vendor("Vendor A", ticketPool, 20);
-        Vendor vendor2 = new Vendor("Vendor B", ticketPool, 30);
+        System.out.print("Enter number of vendors: ");
+        int numVendors = scanner.nextInt();
 
+        System.out.print("Enter number of customers: ");
+        int numCustomers = scanner.nextInt();
 
-        Customer customer1 = new Customer("Customer A", ticketPool, 40);
-        Customer customer2 = new Customer("Customer B", ticketPool, 20);
-        Customer customer3 = new Customer("Customer C", ticketPool, 10);
+        // Start Vendor threads
+        Thread[] vendorThreads = new Thread[numVendors];
+        for (int i = 0; i < numVendors; i++) {
+            Vendor vendor = new Vendor(i + 1, loadedConfig.getTicketReleaseRate(),  ticketPool, logger);
+            vendorThreads[i] = new Thread(vendor);
+            vendorThreads[i].start();
+        }
 
+        // Start Customer threads
+        Thread[] customerThreads = new Thread[numCustomers];
+        for (int i = 0; i < numCustomers; i++) {
+            Customer customer = new Customer(i + 1, loadedConfig.getCustomerRetrievalRate(), ticketPool, logger);
+            customerThreads[i] = new Thread(customer);
+            customerThreads[i].start();
+        }
 
-        Thread vendorThread1 = new Thread(vendor1);
-        Thread vendorThread2 = new Thread(vendor2);
-
-
-        Thread customerThread1 = new Thread(customer1);
-        Thread customerThread2 = new Thread(customer2);
-        Thread customerThread3 = new Thread(customer3);
-
-
-        vendorThread1.start();
-        vendorThread2.start();
-        customerThread1.start();
-        customerThread2.start();
-        customerThread3.start();
     }
 }
+
+
+
+
 
